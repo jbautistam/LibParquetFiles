@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Threading;
+using System.Threading.Tasks;
+
 using Parquet;
-using Parquet.Data;
+using Parquet.Schema;
 
 namespace Bau.Libraries.LibParquetFiles.Writers.Models
 {
 	/// <summary>
 	///		Datos del esquema de un archivo
 	/// </summary>
-	internal class ParquetFileModel : IDisposable
+	internal class ParquetFileModel : IAsyncDisposable
 	{
 		// Variables privadas
 		private readonly TimeZoneInfo _timeZoneCentral;
@@ -32,12 +35,12 @@ namespace Bau.Libraries.LibParquetFiles.Writers.Models
 		/// <summary>
 		///		Abre el archivo parquet y lo prepara para escribir los datos
 		/// </summary>
-		internal void Open(System.IO.Stream stream, IDataReader reader)
+		internal async Task OpenAsync(System.IO.Stream stream, IDataReader reader, CancellationToken cancellationToken)
 		{
 			// Asigna las columnas al esquema
 			AssignColumnsSchema(reader);
 			// Crea el generador de parquet
-			Writer = new Parquet.ParquetWriter(GetParquetSchema(), stream);
+			Writer = await ParquetWriter.CreateAsync(GetParquetSchema(), stream, cancellationToken: cancellationToken);
 			// Establece el método de compresión
 			//? No asigna el nivel de compresión: deja el predeterminado para el método
 			Writer.CompressionMethod = CompressionMethod.Snappy;
@@ -63,7 +66,7 @@ namespace Bau.Libraries.LibParquetFiles.Writers.Models
 		/// <summary>
 		///		Obtiene el esquema Parquet a partir del dataReader
 		/// </summary>
-		private Schema GetParquetSchema()
+		private ParquetSchema GetParquetSchema()
 		{
 			Field[] fields = new Field[Columns.Count];
 
@@ -71,7 +74,7 @@ namespace Bau.Libraries.LibParquetFiles.Writers.Models
 				for (int index = 0; index < Columns.Count; index++)
 					fields[index] = Columns[index].ParquetField;
 				// Devuelve la colección de campos
-				return new Schema(fields);
+				return new ParquetSchema(fields);
 		}
 
 		/// <summary>
@@ -112,13 +115,13 @@ namespace Bau.Libraries.LibParquetFiles.Writers.Models
 		/// <summary>
 		///		Lee un registro
 		/// </summary>
-		internal void ReadRecord(IDataReader reader)
+		internal async Task ReadRecordAsync(IDataReader reader, CancellationToken cancellationToken)
 		{
 			// Lee los datos del registro
 			ReadData(reader);
 			// Escribe la caché en el archivo si se ha superado el número máximo de filas
 			if (Records >= RowGroupSize)
-				Flush();
+				await FlushAsync(cancellationToken);
 		}
 
 		/// <summary>
@@ -170,14 +173,14 @@ namespace Bau.Libraries.LibParquetFiles.Writers.Models
 		/// <summary>
 		///		Libera la caché
 		/// </summary>
-		internal void Flush()
+		internal async Task FlushAsync(CancellationToken cancellationToken)
 		{
 			// Graba los datos que tenía en memoria
 			if (Writer != null && Columns.Count > 0 && Columns[0].Count > 0)
 				using (ParquetRowGroupWriter groupWriter = Writer.CreateRowGroup())
 				{
 					for (int index = 0; index < Columns.Count; index++)
-						groupWriter.WriteColumn(Columns[index].ConvertToParquet());
+						await groupWriter.WriteColumnAsync(Columns[index].ConvertToParquet());
 				}
 			// Limpia los valores que había hasta ahora
 			for (int index = 0; index < Columns.Count; index++)
@@ -187,15 +190,15 @@ namespace Bau.Libraries.LibParquetFiles.Writers.Models
 		/// <summary>
 		///		Libera la memoria
 		/// </summary>
-		protected virtual void Dispose(bool disposing)
+		public virtual async ValueTask DisposeAsync()
 		{
 			if (!Disposed)
 			{
 				// Si se está liberando la memoria
-				if (disposing && Writer != null)
+				if (Writer != null)
 				{
 					// Envía los datos sobrantes
-					Flush();
+					await FlushAsync(CancellationToken.None);
 					// Libera el stream
 					//? Se tiene que hacer primero el Dispose del Writer para que la librería escriba el pie del archivo, no se puede ponerlo a null directamente
 					Writer.Dispose();
@@ -208,15 +211,6 @@ namespace Bau.Libraries.LibParquetFiles.Writers.Models
 		}
 
 		/// <summary>
-		///		Libera la memoria
-		/// </summary>
-		public void Dispose()
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		/// <summary>
 		///		Columnas del archivo
 		/// </summary>
 		private List<ParquetColumnModel> Columns { get; } = new List<ParquetColumnModel>();
@@ -224,7 +218,7 @@ namespace Bau.Libraries.LibParquetFiles.Writers.Models
 		/// <summary>
 		///		Generador del archivo parquet
 		/// </summary>
-		private Parquet.ParquetWriter Writer { get; set; }
+		private ParquetWriter Writer { get; set; }
 
 		/// <summary>
 		///		Tamaño del grupo de filas

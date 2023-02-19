@@ -1,5 +1,6 @@
 ﻿using System;
 using Parquet.Data;
+using Parquet.Schema;
 
 namespace Bau.Libraries.LibParquetFiles.Writers.Models
 {
@@ -132,24 +133,24 @@ namespace Bau.Libraries.LibParquetFiles.Writers.Models
 		/// <summary>
 		///		Convierte el tipo de datos
 		/// </summary>
-		private DataType ConvertType(FieldType type)
+		private Type ConvertType(FieldType type)
 		{
 			switch (type)
 			{
 				case FieldType.Boolean:
-					return DataType.Boolean;
+					return typeof(bool);
 				case FieldType.Decimal:
-					return DataType.Decimal;
+					return typeof(decimal);
 				case FieldType.Double:
-					return DataType.Double;
+					return typeof(double);
 				case FieldType.Byte: // ... los byte no se transforman en enteros por un problema en el intérprete de Spark
-					return DataType.Byte;
+					return typeof(byte);
 				case FieldType.Integer:
-					return DataType.Int32;
+					return typeof(int);
 				case FieldType.Long:
-					return DataType.Int64;
+					return typeof(long);
 				default:
-					return DataType.String;
+					return typeof(string);
 			}
 		}
 

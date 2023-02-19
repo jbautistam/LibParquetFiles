@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Data;
+using System.Threading;
+using System.Threading.Tasks;
 
 using Parquet;
-using Parquet.Data;
+using Parquet.Schema;
 
 namespace Bau.Libraries.LibParquetFiles.Readers
 {
@@ -14,16 +16,16 @@ namespace Bau.Libraries.LibParquetFiles.Readers
 		/// <summary>
 		///		Obtiene un dataTable a partir de un archivo parquet
 		/// </summary>
-		public DataTable ParquetReaderToDataTable(string fileName, int offset, int recordCount, out long totalRecordCount)
+		public async Task<(DataTable table, long totalRecordCount)> ParquetReaderToDataTableAsync(string fileName, int offset, int recordCount, 
+																								  CancellationToken cancellationToken)
 		{
 			DataTable dataTable = new DataTable();
+			long totalRecordCount = 0;
 
-				// Inicializa el número total de registros
-				totalRecordCount = 0;
 				// Lee el archivo
 				using (System.IO.Stream fileReader = System.IO.File.OpenRead(fileName))
 				{
-					using (ParquetReader parquetReader = new ParquetReader(fileReader))
+					using (ParquetReader parquetReader = await ParquetReader.CreateAsync(fileName, cancellationToken: cancellationToken))
 					{
 						DataField[] dataFields = parquetReader.Schema.GetDataFields();
 
@@ -52,14 +54,15 @@ namespace Bau.Libraries.LibParquetFiles.Readers
 
 										long recordsToSkipInThisRowGroup = Math.Max(offset - rowsPassedUntilThisRowGroup, 0);
 
-										ProcessRowGroup(dataTable, groupReader, dataFields, recordsToSkipInThisRowGroup, numberOfRecordsToReadFromThisRowGroup);
+										await ProcessRowGroupAsync(dataTable, groupReader, dataFields, recordsToSkipInThisRowGroup, numberOfRecordsToReadFromThisRowGroup,
+																   cancellationToken);
 									}
 								}
 							}
 					}
 				}
 				// Devuelve los datos leidos
-				return dataTable;
+				return (dataTable, totalRecordCount);
 		}
 
 		/// <summary>
@@ -68,13 +71,14 @@ namespace Bau.Libraries.LibParquetFiles.Readers
 		private void CreateColumns(DataTable dataTable, DataField[] fields)
 		{
             foreach (DataField field in fields)
-                dataTable.Columns.Add(new System.Data.DataColumn(field.Name, Convert(field.DataType)));
+                dataTable.Columns.Add(new DataColumn(field.Name, field.ClrType));
 		}
 
 		/// <summary>
 		///		Procesa un grupo de filas
 		/// </summary>
-		private void ProcessRowGroup(DataTable dataTable, ParquetRowGroupReader groupReader, DataField[] fields, long skipRecords, long readRecords)
+		private async Task ProcessRowGroupAsync(DataTable dataTable, ParquetRowGroupReader groupReader, DataField[] fields, long skipRecords, long readRecords,
+												CancellationToken cancellationToken)
 		{
 			int rowBeginIndex = dataTable.Rows.Count;
 			bool isFirstColumn = true;
@@ -84,7 +88,7 @@ namespace Bau.Libraries.LibParquetFiles.Readers
 				int rowIndex = rowBeginIndex;
 
 				int skippedRecords = 0;
-				foreach (object value in groupReader.ReadColumn(field).Data)
+				foreach (object value in (await groupReader.ReadColumnAsync(field, cancellationToken)).Data)
 				{
 					if (skipRecords > skippedRecords)
 					{
@@ -112,41 +116,6 @@ namespace Bau.Libraries.LibParquetFiles.Readers
 				}
 
 				isFirstColumn = false;
-			}
-		}
-
-		/// <summary>
-		///		Convierte el tipo de datos
-		/// </summary>
-		private Type Convert(DataType type)
-		{
-			switch (type)
-			{
-				case DataType.Boolean:
-					return typeof(bool);
-				case DataType.Byte:
-					return typeof(sbyte);
-				case DataType.ByteArray:
-					return typeof(sbyte[]);
-				case DataType.DateTimeOffset: // tratamos dateTimeOffsets como dateTime
-					return typeof(DateTime);
-				case DataType.Decimal:
-					return typeof(decimal);
-				case DataType.Double:
-					return typeof(double);
-				case DataType.Float:
-					return typeof(float);
-				case DataType.Short:
-				case DataType.Int16:
-				case DataType.Int32:
-				case DataType.UnsignedInt16:
-					return typeof(int);
-				case DataType.Int64:
-					return typeof(long);
-				case DataType.UnsignedByte:
-					return typeof(byte);
-				default:
-					return typeof(string);
 			}
 		}
 	}

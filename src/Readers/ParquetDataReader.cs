@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using DbData = System.Data; // ... para que no colisione con el objeto DataColumn de Parquet.Data
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 using Parquet;
 using Parquet.Data;
+using Parquet.Schema;
 
 namespace Bau.Libraries.LibParquetFiles.Readers
 {
@@ -34,17 +37,25 @@ namespace Bau.Libraries.LibParquetFiles.Readers
 		/// </summary>
 		public void Open(string fileName)
 		{
-			Open(System.IO.File.OpenRead(fileName));
+			Task.Run(async () => await OpenAsync(System.IO.File.OpenRead(fileName), CancellationToken.None));
 		}
 
 		/// <summary>
 		///		Abre el archivo
 		/// </summary>
-		public void Open(System.IO.Stream stream)
+		public async Task OpenAsync(string fileName, CancellationToken cancellationToken)
+		{
+			await OpenAsync(System.IO.File.OpenRead(fileName), cancellationToken);
+		}
+
+		/// <summary>
+		///		Abre el archivo
+		/// </summary>
+		public async Task OpenAsync(System.IO.Stream stream, CancellationToken cancellationToken)
 		{
 			// Asigna el stream al archivo
 			_fileReader = stream;
-			_parquetReader = new ParquetReader(_fileReader);
+			_parquetReader = await ParquetReader.CreateAsync(_fileReader, cancellationToken: cancellationToken);
 			// e indica que aún no se ha leido ninguna línea
 			_row = 0;
 			_rowGroup = 0;
@@ -54,9 +65,17 @@ namespace Bau.Libraries.LibParquetFiles.Readers
 		}
 
 		/// <summary>
-		///		Lee un registro
+		///		Lee un registro (de froma síncrona
 		/// </summary>
 		public bool Read()
+		{
+			return Task.Run(async () => await ReadAsync(CancellationToken.None)).GetAwaiter().GetResult();
+		}
+
+		/// <summary>
+		///		Lee un registro
+		/// </summary>
+		public async Task<bool> ReadAsync(CancellationToken cancellationToken)
 		{
 			bool readed = false;
 
@@ -65,7 +84,7 @@ namespace Bau.Libraries.LibParquetFiles.Readers
 				{
 					// Obtiene el lector con el grupo de filas
 					if (_rowGroup < _parquetReader.RowGroupCount)
-						_groupRowColumns = _parquetReader.ReadEntireRowGroup(_rowGroup).ToArray();
+						_groupRowColumns = (await _parquetReader.ReadEntireRowGroupAsync(_rowGroup)).ToArray();
 					else
 						_groupRowColumns = null;
 					// Incrementa el número de grupo y cambia la fila actual
@@ -107,7 +126,7 @@ namespace Bau.Libraries.LibParquetFiles.Readers
 		private bool IsGuid(object value)
 		{
 			if (value != null)
-				return Guid.TryParse(value.ToString(), out Guid testGuid);
+				return Guid.TryParse(value.ToString(), out Guid _);
 			else
 				return false;
 		}
