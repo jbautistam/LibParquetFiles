@@ -11,11 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Writers\ParquetDataWriter.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Parquet.Net" Version="4.5.1" />
+    <PackageReference Include="Parquet.Net" Version="4.5.4" />
   </ItemGroup>
 
 </Project>

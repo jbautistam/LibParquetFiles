@@ -65,7 +65,7 @@ namespace Bau.Libraries.LibParquetFiles.Readers
 		}
 
 		/// <summary>
-		///		Lee un registro (de froma síncrona
+		///		Lee un registro (de forma síncrona)
 		/// </summary>
 		public bool Read()
 		{

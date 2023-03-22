@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Data;
-using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,12 +8,12 @@ namespace Bau.Libraries.LibParquetFiles.Writers
 	/// <summary>
 	///		Clase de escritura sobre archivos Parquet leyendo de un <see cref="IDataReader"/>
 	/// </summary>
-	public class ParquetDataWriterAsync : IAsyncDisposable
+	public class ParquetDataWriter : IAsyncDisposable
 	{
 		// Eventos públicos
 		public event EventHandler<EventArguments.AffectedEvntArgs> Progress;
 
-		public ParquetDataWriterAsync(int rowGroupSize, int notifyAfter = 200_000)
+		public ParquetDataWriter(int rowGroupSize, int notifyAfter = 200_000)
 		{
 			RowGroupSize = rowGroupSize;
 			NotifyAfter = notifyAfter;

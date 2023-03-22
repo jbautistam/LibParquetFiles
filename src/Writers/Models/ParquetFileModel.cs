@@ -180,7 +180,7 @@ namespace Bau.Libraries.LibParquetFiles.Writers.Models
 				using (ParquetRowGroupWriter groupWriter = Writer.CreateRowGroup())
 				{
 					for (int index = 0; index < Columns.Count; index++)
-						await groupWriter.WriteColumnAsync(Columns[index].ConvertToParquet());
+						await groupWriter.WriteColumnAsync(Columns[index].ConvertToParquet(), cancellationToken);
 				}
 			// Limpia los valores que había hasta ahora
 			for (int index = 0; index < Columns.Count; index++)
