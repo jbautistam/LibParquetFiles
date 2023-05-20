@@ -1,9 +1,6 @@
-﻿using System;
+﻿namespace Bau.Libraries.LibParquetFiles.Writers.Models;
 
-namespace Bau.Libraries.LibParquetFiles.Writers.Models
+internal class ColumnBooleanArrayModel : ColumnArrayModel<bool>
 {
-	internal class ColumnBooleanArrayModel : ColumnArrayModel<bool>
-	{
-		internal ColumnBooleanArrayModel(int maxValues) : base(maxValues) {}
-	}
+	internal ColumnBooleanArrayModel(int maxValues) : base(maxValues) {}
 }
