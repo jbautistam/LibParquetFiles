@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Parquet.Net" Version="4.11.3" />
+    <PackageReference Include="Parquet.Net" Version="4.12.0" />
   </ItemGroup>
 
 </Project>
