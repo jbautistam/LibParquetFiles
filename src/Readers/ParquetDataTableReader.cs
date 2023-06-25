@@ -1,119 +1,89 @@
 ﻿using System.Data;
 
-using Parquet;
-using Parquet.Schema;
-
 namespace Bau.Libraries.LibParquetFiles.Readers;
 
 /// <summary>
-///     Lector de parquet sobre un DataTable
+///     Lector de un archivo Parquet sobre un DataTable
 /// </summary>
 public class ParquetDataTableReader
 {
 	/// <summary>
-	///		Obtiene un dataTable a partir de un archivo parquet
+	///		Carga una página de un archivo en un dataTable
 	/// </summary>
-	public async Task<(DataTable table, long totalRecordCount)> ParquetReaderToDataTableAsync(string fileName, int offset, int recordCount, 
-																							  CancellationToken cancellationToken)
+	public async Task<(DataTable table, long totalRecordCount)> LoadAsync(string fileName, int page, int recordsPerPage, bool countRecords, 
+																		  ParquetFiltersCollection? filters, CancellationToken cancellationToken)
 	{
-		DataTable dataTable = new DataTable();
-		long totalRecordCount = 0;
+		long record = 0;
+		int offset = (page - 1) * recordsPerPage;
+		DataTable table = new DataTable();
+		bool end = false;
 
-			// Lee el archivo
-			using (System.IO.Stream fileReader = System.IO.File.OpenRead(fileName))
+			// Lee los datos
+			using (ParquetDataReader reader = new ParquetDataReader())
 			{
-				using (ParquetReader parquetReader = await ParquetReader.CreateAsync(fileName, cancellationToken: cancellationToken))
+				// Abre el archivo
+				await reader.OpenAsync(fileName, cancellationToken);
+				// Lee los registros
+				while (await reader.ReadAsync(cancellationToken) && !end && !cancellationToken.IsCancellationRequested)
 				{
-					DataField[] dataFields = parquetReader.Schema.GetDataFields();
-
-						// Crea las columnas en la tabla
-						CreateColumns(dataTable, dataFields);
-						//Read column by column to generate each row in the datatable
-						for (int rowGroup = 0; rowGroup < parquetReader.RowGroupCount; rowGroup++)
-						{
-							long rowsLeftToRead = recordCount;
-
-							using (ParquetRowGroupReader groupReader = parquetReader.OpenRowGroupReader(rowGroup))
-							{
-								if (groupReader.RowCount > int.MaxValue)
-									throw new ArgumentOutOfRangeException(string.Format("Cannot handle row group sizes greater than {0}", groupReader.RowCount));
-
-								long rowsPassedUntilThisRowGroup = totalRecordCount;
-								totalRecordCount += (int) groupReader.RowCount;
-
-								if (offset >= totalRecordCount)
-									continue;
-
-								if (rowsLeftToRead > 0)
-								{
-									long numberOfRecordsToReadFromThisRowGroup = Math.Min(Math.Min(totalRecordCount - offset, recordCount), (int) groupReader.RowCount);
-									rowsLeftToRead -= numberOfRecordsToReadFromThisRowGroup;
-
-									long recordsToSkipInThisRowGroup = Math.Max(offset - rowsPassedUntilThisRowGroup, 0);
-
-									await ProcessRowGroupAsync(dataTable, groupReader, dataFields, recordsToSkipInThisRowGroup, numberOfRecordsToReadFromThisRowGroup,
-															   cancellationToken);
-								}
-							}
-						}
+					// Añade el esquema a la tabla
+					if (table.Columns.Count == 0)
+						AddSchema(table, reader);
+					// Sólo se tiene en cuenta la fila si estamos en el filtro
+					if (IsAtFilter(reader, filters))
+					{
+						// Añade la fila a la tabla
+						if (record >= offset && record < offset + recordsPerPage)
+							AddRow(table, reader);
+						// Incrementa el registro (sólo si estamos en el filtro para contabilizar correctamente el número de registros)
+						record++;
+					}
+					// Comprueba si se deben contar todos los registros
+					end = !countRecords && record >= offset + recordsPerPage;
 				}
 			}
-			// Devuelve los datos leidos
-			return (dataTable, totalRecordCount);
+			// Devuelve la tabla de datos
+			return (table, record);
 	}
 
 	/// <summary>
-	///		Crea las columnas de la tabla
+	///		Comprueba si se debe añadir el registro actual a la salida teniendo en cuentra el filtro
 	/// </summary>
-	private void CreateColumns(DataTable dataTable, DataField[] fields)
+	private bool IsAtFilter(ParquetDataReader reader, ParquetFiltersCollection? filters)
 	{
-            foreach (DataField field in fields)
-                dataTable.Columns.Add(new DataColumn(field.Name, field.ClrType));
+		if (filters is null || filters.Count == 0)
+			return true;
+		else
+		{
+			// Evalúa las condiciones sobre los campos
+			for (int index = 0; index < reader.FieldCount; index++)
+				if (!filters.Evaluate(reader.GetName(index), reader[index]))
+					return false;
+			// Si ha llegado hasta aquí es porque cumple con todas las condiciones
+			return true;
+		}
 	}
 
 	/// <summary>
-	///		Procesa un grupo de filas
+	///		Añade el esquema a la tabla
 	/// </summary>
-	private async Task ProcessRowGroupAsync(DataTable dataTable, ParquetRowGroupReader groupReader, DataField[] fields, long skipRecords, long readRecords,
-											CancellationToken cancellationToken)
+	private void AddSchema(DataTable table, ParquetDataReader reader)
 	{
-		int rowBeginIndex = dataTable.Rows.Count;
-		bool isFirstColumn = true;
+		for (int index = 0; index < reader.FieldCount; index++)
+			table.Columns.Add(reader.GetName(index), reader.GetValue(index).GetType());
+	}
 
-			foreach (DataField field in fields)
-			{
-				int rowIndex = rowBeginIndex;
-				int skippedRecords = 0;
+	/// <summary>
+	///		Añade una fila a la tabla
+	/// </summary>
+	private void AddRow(DataTable table, ParquetDataReader reader)
+	{
+		DataRow row = table.NewRow();
 
-					foreach (object value in (await groupReader.ReadColumnAsync(field, cancellationToken)).Data)
-					{
-						// Se salta los primeros registros
-						if (skipRecords > skippedRecords)
-						{
-							skippedRecords++;
-							continue;
-						}
-						// Si ha pasado el número de registros a leer, sale del bucle
-						if (rowIndex >= readRecords)
-							break;
-						// Si es la primera columna, crea una nueva fila
-						if (isFirstColumn)
-						{
-							DataRow newRow = dataTable.NewRow();
-
-								// Añade la fila
-								dataTable.Rows.Add(newRow);
-						}
-						// Asigna el valor a la columna
-						if (value is null)
-							dataTable.Rows[rowIndex][field.Name] = DBNull.Value;
-						else
-							dataTable.Rows[rowIndex][field.Name] = value;
-						// Incrementa el índice de la fila
-						rowIndex++;
-					}
-					// Indica que no es la primera columna
-					isFirstColumn = false;
-			}
+			// Añade las columnas
+			foreach (DataColumn column in row.Table.Columns)
+				row[column] = reader[column.ColumnName];
+			// Añade la fila a la tabla
+			table.Rows.Add(row);
 	}
 }

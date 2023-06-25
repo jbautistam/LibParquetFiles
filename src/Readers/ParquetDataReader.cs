@@ -17,7 +17,7 @@ public class ParquetDataReader : DbData.IDataReader
 	private Stream? _fileReader;
 	private ParquetReader? _parquetReader;
 	private DataField[] _schema = default!;
-	private DataColumn[] _groupRowColumns = default!;
+	private DataColumn[]? _groupRowColumns;
 	private int _rowGroup = 0, _actualRow = 0;
 	private List<object?> _rowValues = default!;
 	private long _row;
@@ -52,7 +52,7 @@ public class ParquetDataReader : DbData.IDataReader
 	}
 
 	/// <summary>
-	///		Lee un registro (de forma síncrona)
+	///		Lee un registro (de forma síncrona) [necesario para implementar el interface <see cref="DbData.IDataReader"/>
 	/// </summary>
 	public bool Read()
 	{
@@ -66,43 +66,52 @@ public class ParquetDataReader : DbData.IDataReader
 	{
 		bool readed = false;
 
-			// Recorre los grupos de filas del archivo
-			if (_groupRowColumns == null || _actualRow >= _groupRowColumns[0].Data.Length)
+			// Si realmente hay algo que leer
+			if (_parquetReader is not null)
 			{
-				// Obtiene el lector con el grupo de filas
-				if (_rowGroup < _parquetReader.RowGroupCount)
-					_groupRowColumns = (await _parquetReader.ReadEntireRowGroupAsync(_rowGroup)).ToArray();
-				else
-					_groupRowColumns = null;
-				// Incrementa el número de grupo y cambia la fila actual
-				_rowGroup++;
-				_actualRow = 0;
-			}
-			// Obtiene los datos (si queda algo por leer)
-			if (_groupRowColumns != null)
-			{
-				// Transforma las columnas
-				_rowValues = new List<object?>();
-				foreach (DataColumn column in _groupRowColumns)
+				// Recorre los grupos de filas del archivo
+				if (_groupRowColumns == null || _actualRow >= _groupRowColumns[0].Data.Length)
 				{
-					object? value = column.Data.GetValue(_actualRow);
-
-						// Cambia el tipo GUID
-						if (value is not null)
-						{
-							if (IsGuid(value))
-								value = ConvertGuidFromString(value);
-						}
-						// Añade el valor 
-						_rowValues.Add(value);
+					// Obtiene el lector con el grupo de filas
+					if (_rowGroup < _parquetReader.RowGroupCount)
+						_groupRowColumns = (await _parquetReader.ReadEntireRowGroupAsync(_rowGroup)).ToArray();
+					else
+						_groupRowColumns = null;
+					// Incrementa el número de grupo y cambia la fila actual
+					_rowGroup++;
+					_actualRow = 0;
 				}
-				// Indica que se ha leido el registro e incrementa la fila actual
-				readed = true;
-				_actualRow++;
-				// Incrementa la fila total y lanza el evento
-				_row++;
-				if (_row % NotifyAfter == 0)
-					RaiseEventReadBlock(_row);
+				// Obtiene los datos (si queda algo por leer)
+				if (_groupRowColumns != null)
+				{
+					// Transforma las columnas
+					_rowValues = new List<object?>();
+					foreach (DataColumn column in _groupRowColumns)
+						_rowValues.Add(column.Data.GetValue(_actualRow));
+//TODO ¿esto sigue haciendo falta? Posiblemente aumente mucho el rendimiento si quitamos todo este If
+/*
+					{
+						object? value = column.Data.GetValue(_actualRow);
+
+							// Cambia el tipo GUID
+							if (value is not null)
+							{
+								if (IsGuid(value))
+									value = ConvertGuidFromString(value);
+							}
+							// Añade el valor 
+							_rowValues.Add(value);
+					}
+*/
+
+					// Indica que se ha leido el registro e incrementa la fila actual
+					readed = true;
+					_actualRow++;
+					// Incrementa la fila total y lanza el evento
+					_row++;
+					if (_row % NotifyAfter == 0)
+						RaiseEventReadBlock(_row);
+				}
 			}
 			// Devuelve el valor que indica si se ha leido un registro
 			return readed;
@@ -135,7 +144,8 @@ public class ParquetDataReader : DbData.IDataReader
 	/// </summary>
 	private void ParseSchema()
 	{
-		_schema = _parquetReader.Schema.GetDataFields();
+		if (_parquetReader is not null)
+			_schema = _parquetReader.Schema.GetDataFields();
 	}
 
 	/// <summary>
@@ -176,7 +186,7 @@ public class ParquetDataReader : DbData.IDataReader
 	/// <summary>
 	///		Obtiene el nombre del tipo de datos
 	/// </summary>
-	public string GetDataTypeName(int i) => _rowValues[i].GetType().Name;
+	public string GetDataTypeName(int i) => _rowValues[i].GetType()?.Name;
 
 	/// <summary>
 	///		Obtiene el tipo de un campo

@@ -109,9 +109,9 @@ internal class ParquetFileModel : IAsyncDisposable
 	}
 
 	/// <summary>
-	///		Lee un registro
+	///		Lee los datos de un registro y los graba en el archivo
 	/// </summary>
-	internal async Task ReadRecordAsync(IDataReader reader, CancellationToken cancellationToken)
+	internal async Task WriteRecordAsync(IDataReader reader, CancellationToken cancellationToken)
 	{
 		// Lee los datos del registro
 		ReadData(reader);
