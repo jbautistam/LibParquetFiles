@@ -70,7 +70,7 @@ public class ParquetDataTableReader
 	private void AddSchema(DataTable table, ParquetDataReader reader)
 	{
 		for (int index = 0; index < reader.FieldCount; index++)
-			table.Columns.Add(reader.GetName(index), reader.GetValue(index).GetType());
+			table.Columns.Add(reader.GetName(index), reader.GetFieldType(index));
 	}
 
 	/// <summary>

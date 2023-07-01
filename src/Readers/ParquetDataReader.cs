@@ -186,12 +186,12 @@ public class ParquetDataReader : DbData.IDataReader
 	/// <summary>
 	///		Obtiene el nombre del tipo de datos
 	/// </summary>
-	public string GetDataTypeName(int i) => _rowValues[i].GetType()?.Name;
+	public string GetDataTypeName(int i) => GetFieldType(i).Name;
 
 	/// <summary>
 	///		Obtiene el tipo de un campo
 	/// </summary>
-	public Type GetFieldType(int i) => _rowValues[i].GetType();
+	public Type GetFieldType(int i) => _schema[i].ClrType; // _rowValues[i].GetType();
 
 	/// <summary>
 	///		Obtiene el valor de un campo
