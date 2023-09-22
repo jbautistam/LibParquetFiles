@@ -82,7 +82,10 @@ public class ParquetDataTableReader
 
 			// Añade las columnas
 			foreach (DataColumn column in row.Table.Columns)
-				row[column] = reader[column.ColumnName];
+				if (reader[column.ColumnName] is null)
+					row[column] = DBNull.Value;
+				else
+					row[column] = reader[column.ColumnName];
 			// Añade la fila a la tabla
 			table.Rows.Add(row);
 	}
