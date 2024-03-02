@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.32228.430
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibParquetFiles", "src\LibParquetFiles.csproj", "{D638BA04-4C24-4BFB-A5E6-F3AAA0985016}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ParquetFiles.Tests", "tests\ParquetFiles.Tests\ParquetFiles.Tests.csproj", "{AED8C55E-DD04-40F9-B156-017C9098938A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibParquetFiles", "src\LibParquetFiles\LibParquetFiles.csproj", "{2BC5C16E-AE0A-4B66-9F68-D69AF656799D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +13,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D638BA04-4C24-4BFB-A5E6-F3AAA0985016}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D638BA04-4C24-4BFB-A5E6-F3AAA0985016}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D638BA04-4C24-4BFB-A5E6-F3AAA0985016}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D638BA04-4C24-4BFB-A5E6-F3AAA0985016}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AED8C55E-DD04-40F9-B156-017C9098938A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AED8C55E-DD04-40F9-B156-017C9098938A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AED8C55E-DD04-40F9-B156-017C9098938A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AED8C55E-DD04-40F9-B156-017C9098938A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2BC5C16E-AE0A-4B66-9F68-D69AF656799D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BC5C16E-AE0A-4B66-9F68-D69AF656799D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BC5C16E-AE0A-4B66-9F68-D69AF656799D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2BC5C16E-AE0A-4B66-9F68-D69AF656799D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
