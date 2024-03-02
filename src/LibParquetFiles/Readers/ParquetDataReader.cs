@@ -16,7 +16,7 @@ public class ParquetDataReader : DbData.IDataReader
 	// Variables privadas
 	private Stream? _fileReader;
 	private ParquetReader? _parquetReader;
-	private DataField[] _schema = default!;
+	private DataField[]? _schema;
 	private DataColumn[]? _groupRowColumns;
 	private int _rowGroup = 0, _actualRow = 0;
 	private List<object?> _rowValues = default!;
@@ -140,15 +140,6 @@ public class ParquetDataReader : DbData.IDataReader
 	}
 
 	/// <summary>
-	///		Interpreta el esquema del archivos
-	/// </summary>
-	private void ParseSchema()
-	{
-		if (_parquetReader is not null)
-			_schema = _parquetReader.Schema.GetDataFields();
-	}
-
-	/// <summary>
 	///		Lanza el evento de lectura de un bloque
 	/// </summary>
 	private void RaiseEventReadBlock(long row)
@@ -181,7 +172,7 @@ public class ParquetDataReader : DbData.IDataReader
 	/// <summary>
 	///		Obtiene el nombre del campo
 	/// </summary>
-	public string GetName(int i) => _schema[i].Name;
+	public string GetName(int i) => Schema[i].Name;
 
 	/// <summary>
 	///		Obtiene el nombre del tipo de datos
@@ -191,7 +182,7 @@ public class ParquetDataReader : DbData.IDataReader
 	/// <summary>
 	///		Obtiene el tipo de un campo
 	/// </summary>
-	public Type GetFieldType(int i) => _schema[i].ClrType; // _rowValues[i].GetType();
+	public Type GetFieldType(int i) => Schema[i].ClrType; // _rowValues[i].GetType();
 
 	/// <summary>
 	///		Obtiene el valor de un campo
@@ -290,8 +281,8 @@ public class ParquetDataReader : DbData.IDataReader
 	{
 		// Obtiene el índice del registro
 		if (!string.IsNullOrWhiteSpace(name))
-			for (int index = 0; index < _schema.Length; index++)
-				if (_schema[index].Name.Equals(name, StringComparison.CurrentCultureIgnoreCase))
+			for (int index = 0; index < Schema.Length; index++)
+				if (Schema[index].Name.Equals(name, StringComparison.CurrentCultureIgnoreCase))
 					return index;
 		// Si ha llegado hasta aquí es porque no ha encontrado el campo
 		return -1;
@@ -306,6 +297,21 @@ public class ParquetDataReader : DbData.IDataReader
 	///		Los CSV sólo devuelven un Resultset, de todas formas, DbDataAdapter espera este valor
 	/// </summary>
 	public bool NextResult() => false;
+
+	/// <summary>
+	///		Esquema del archivo
+	/// </summary>
+	private DataField[]? Schema
+	{
+		get 
+		{
+			// Si no se ha leído aún el esquema, se lee
+			if (_schema is null && _parquetReader is not null)
+				_schema = _parquetReader.Schema.GetDataFields();
+			// Devuelve el esquema
+			return _schema;
+		}
+	}
 
 	/// <summary>
 	///		Libera la memoria
@@ -357,17 +363,7 @@ public class ParquetDataReader : DbData.IDataReader
 	///		Lo primero que hace un BulkCopy es ver el número de campos que tiene, si no se ha leido la cabecera puede
 	///	que aún no tengamos ningún número de columnas, por eso se lee por primera vez
 	/// </remarks>
-	public int FieldCount 
-	{ 
-		get 
-		{ 
-			// Lee la cabecera para cargar las columnas si es necesario
-			if (_schema is null || _schema.Length == 0)
-				ParseSchema();
-			// Devuelve el número de columnas
-			return _schema?.Length ?? 0; 
-		}
-	}
+	public int FieldCount => Schema?.Length ?? 0;
 
 	/// <summary>
 	///		Indexador por número de campo
