@@ -152,7 +152,7 @@ internal class ParquetFileModel : IAsyncDisposable
 							Columns[index].AddLong(reader.GetInt64(index));
 						break;
 					case ParquetColumnModel.FieldType.Guid:
-							Columns[index].AddString(reader.GetGuid(index).ToString());
+							Columns[index].AddGuid(reader.GetGuid(index));
 						break;
 					default:
 							Columns[index].AddString(reader.GetString(index));

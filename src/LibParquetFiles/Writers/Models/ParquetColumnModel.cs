@@ -43,6 +43,7 @@ internal class ParquetColumnModel
 	private decimal?[] _decimalValues = default!;
 	private bool?[] _boolValues = default!;
 	private byte?[] _byteValues = default!;
+	private Guid?[] _guidValues = default!;
 
 	internal ParquetColumnModel(FieldType fieldType, string name, int maxValues)
 	{
@@ -74,6 +75,9 @@ internal class ParquetColumnModel
 				break;
 			case FieldType.Long:
 					_longValues = new long?[maxValues];
+				break;
+			case FieldType.Guid:
+					_guidValues = new Guid?[maxValues];
 				break;
 			default:
 					_stringValues = new string[maxValues];
@@ -110,6 +114,9 @@ internal class ParquetColumnModel
 			case FieldType.Long:
 					_longValues[Count] = null;
 				break;
+			case FieldType.Guid:
+					_guidValues[Count] = null;
+				break;
 			default:
 					_stringValues[Count] = null;
 				break;
@@ -137,6 +144,7 @@ internal class ParquetColumnModel
 				FieldType.Integer => new DataField<int?>(name),
 				FieldType.Long => new DataField<long?>(name),
 				FieldType.DateTime => new DataField<DateTime?>(name),
+				FieldType.Guid => new DataField<Guid?>(name),
 				_ => new DataField<string?>(name)
 			};
 	}
@@ -230,6 +238,17 @@ internal class ParquetColumnModel
 	}
 
 	/// <summary>
+	///		Añade un Guid
+	/// </summary>
+	internal void AddGuid(Guid value)
+	{
+		// Asigna el valor
+		_guidValues[Count] = value;
+		// Incrementa el número de registros
+		Count++;
+	}
+
+	/// <summary>
 	///		Convierte los datos en un array
 	/// </summary>
 	private Array GetArrayData()
@@ -243,6 +262,7 @@ internal class ParquetColumnModel
 				FieldType.Double => _doubleValues[..Count],
 				FieldType.Integer => _intValues[..Count],
 				FieldType.Long => _longValues[..Count],
+				FieldType.Guid => _guidValues[..Count],
 				_ => _stringValues[..Count]
 			};
 	}

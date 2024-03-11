@@ -44,7 +44,7 @@ public class ParquetDataWriter_Should
 	/// </summary>
 	private void Check(ParquetDataReader reader, Sale sale)
 	{
-		reader[reader.GetOrdinal(nameof(sale.Id))].Should().Be(sale.Id.ToString());
+		reader[reader.GetOrdinal(nameof(sale.Id))].Should().Be(sale.Id);
 		reader[reader.GetOrdinal(nameof(sale.ProductId))].Should().Be(sale.ProductId);
 		reader[reader.GetOrdinal(nameof(sale.Date))].Should().Be(sale.Date);
 		reader[reader.GetOrdinal(nameof(sale.Quantity))].Should().Be(sale.Quantity);

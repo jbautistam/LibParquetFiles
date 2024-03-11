@@ -30,7 +30,7 @@ internal class SalesDataReader : IDataReader
 
 	public DataTable? GetSchemaTable()
 	{
-	throw new NotImplementedException();
+		throw new NotImplementedException();
 	}
 
 	public bool NextResult()
@@ -40,14 +40,14 @@ internal class SalesDataReader : IDataReader
 
 	public bool Read()
 	{
-			if (_startRead)
-				ActualRow++;
-			else
-			{
-				_startRead = true;
-				ActualRow = 0;
-			}
-			return ActualRow < Sales.Count;
+		if (_startRead)
+			ActualRow++;
+		else
+		{
+			_startRead = true;
+			ActualRow = 0;
+		}
+		return ActualRow < Sales.Count;
 	}
 
 	public int Depth { get; } = 1;
@@ -58,47 +58,47 @@ internal class SalesDataReader : IDataReader
 
 	public bool GetBoolean(int i)
 	{
-	throw new NotImplementedException();
+		throw new NotImplementedException();
 	}
 
 	public byte GetByte(int i)
 	{
-	throw new NotImplementedException();
+		throw new NotImplementedException();
 	}
 
 	public long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferoffset, int length)
 	{
-	throw new NotImplementedException();
+		throw new NotImplementedException();
 	}
 
 	public char GetChar(int i)
 	{
-	throw new NotImplementedException();
+		throw new NotImplementedException();
 	}
 
 	public long GetChars(int i, long fieldoffset, char[]? buffer, int bufferoffset, int length)
 	{
-	throw new NotImplementedException();
+		throw new NotImplementedException();
 	}
 
 	public IDataReader GetData(int i)
 	{
-	throw new NotImplementedException();
+		throw new NotImplementedException();
 	}
 
 	public string GetDataTypeName(int i)
 	{
-	throw new NotImplementedException();
+		throw new NotImplementedException();
 	}
 
 	public DateTime GetDateTime(int i)
 	{
-	throw new NotImplementedException();
+		throw new NotImplementedException();
 	}
 
 	public decimal GetDecimal(int i)
 	{
-	throw new NotImplementedException();
+		throw new NotImplementedException();
 	}
 
 	public double GetDouble(int i) 
@@ -114,7 +114,7 @@ internal class SalesDataReader : IDataReader
 
 	public float GetFloat(int i)
 	{
-	throw new NotImplementedException();
+		throw new NotImplementedException();
 	}
 
 	public Guid GetGuid(int i) 
@@ -127,7 +127,7 @@ internal class SalesDataReader : IDataReader
 
 	public short GetInt16(int i)
 	{
-	throw new NotImplementedException();
+		throw new NotImplementedException();
 	}
 
 	public int GetInt32(int i)
@@ -140,7 +140,7 @@ internal class SalesDataReader : IDataReader
 
 	public long GetInt64(int i)
 	{
-	throw new NotImplementedException();
+		throw new NotImplementedException();
 	}
 
 	/// <summary>
@@ -189,7 +189,7 @@ internal class SalesDataReader : IDataReader
 
 	public int GetValues(object[] values)
 	{
-	throw new NotImplementedException();
+		throw new NotImplementedException();
 	}
 
 	/// <summary>
