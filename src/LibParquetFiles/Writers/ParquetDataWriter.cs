@@ -12,6 +12,8 @@ public class ParquetDataWriter : IAsyncDisposable
 
 	public ParquetDataWriter(int rowGroupSize, int notifyAfter = 200_000)
 	{
+		ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rowGroupSize);
+		ArgumentOutOfRangeException.ThrowIfNegative(notifyAfter);
 		RowGroupSize = rowGroupSize;
 		NotifyAfter = notifyAfter;
 	}
@@ -49,8 +51,10 @@ public class ParquetDataWriter : IAsyncDisposable
 				// Abre el archivo
 				await file.OpenAsync(stream, reader, cancellationToken);
 				// Carga los registros y los va añadiendo a la lista para meterlos en un grupo de filas
-				while (!cancellationToken.IsCancellationRequested && reader.Read())
+				while (reader.Read())
 				{
+					// Si se ha solicitado la cancelación, lanza en lugar de truncar el archivo en silencio
+					cancellationToken.ThrowIfCancellationRequested();
 					// Lee el registro (graba el grupo si ha sobrepasado el número de registros en la caché)
 					await file.WriteRecordAsync(reader, cancellationToken);
 					// Lanza el evento de progreso

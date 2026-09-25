@@ -30,7 +30,7 @@ internal class SalesDataReader : IDataReader
 
 	public DataTable? GetSchemaTable()
 	{
-		throw new NotImplementedException();
+	throw new NotImplementedException();
 	}
 
 	public bool NextResult()
@@ -40,14 +40,14 @@ internal class SalesDataReader : IDataReader
 
 	public bool Read()
 	{
-		if (_startRead)
-			ActualRow++;
-		else
-		{
-			_startRead = true;
-			ActualRow = 0;
-		}
-		return ActualRow < Sales.Count;
+			if (_startRead)
+				ActualRow++;
+			else
+			{
+				_startRead = true;
+				ActualRow = 0;
+			}
+			return ActualRow < Sales.Count;
 	}
 
 	public int Depth { get; } = 1;
@@ -58,55 +58,55 @@ internal class SalesDataReader : IDataReader
 
 	public bool GetBoolean(int i)
 	{
-		throw new NotImplementedException();
+	throw new NotImplementedException();
 	}
 
 	public byte GetByte(int i)
 	{
-		throw new NotImplementedException();
+	throw new NotImplementedException();
 	}
 
 	public long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferoffset, int length)
 	{
-		throw new NotImplementedException();
+	throw new NotImplementedException();
 	}
 
 	public char GetChar(int i)
 	{
-		throw new NotImplementedException();
+	throw new NotImplementedException();
 	}
 
 	public long GetChars(int i, long fieldoffset, char[]? buffer, int bufferoffset, int length)
 	{
-		throw new NotImplementedException();
+	throw new NotImplementedException();
 	}
 
 	public IDataReader GetData(int i)
 	{
-		throw new NotImplementedException();
+	throw new NotImplementedException();
 	}
 
 	public string GetDataTypeName(int i)
 	{
-		throw new NotImplementedException();
+	throw new NotImplementedException();
 	}
 
 	public DateTime GetDateTime(int i)
 	{
-		throw new NotImplementedException();
+	throw new NotImplementedException();
 	}
 
 	public decimal GetDecimal(int i)
 	{
-		throw new NotImplementedException();
+	throw new NotImplementedException();
 	}
 
-	public double GetDouble(int i) 
+	public double GetDouble(int i)
 	{
-		if (GetValue(i) is double value) 
+		if (GetValue(i) is double value)
 			return value;
 		else
-			return -1;
+			throw new InvalidCastException($"El valor de la columna '{GetName(i)}' no es un double");
 	}
 
 	[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties)]
@@ -114,33 +114,33 @@ internal class SalesDataReader : IDataReader
 
 	public float GetFloat(int i)
 	{
-		throw new NotImplementedException();
+	throw new NotImplementedException();
 	}
 
-	public Guid GetGuid(int i) 
+	public Guid GetGuid(int i)
 	{
 		if (GetValue(i) is Guid guid)
 			return guid;
 		else
-			return Guid.NewGuid();
+			throw new InvalidCastException($"El valor de la columna '{GetName(i)}' no es un Guid");
 	}
 
 	public short GetInt16(int i)
 	{
-		throw new NotImplementedException();
+	throw new NotImplementedException();
 	}
 
 	public int GetInt32(int i)
 	{
-		if (GetValue(i) is int value) 
+		if (GetValue(i) is int value)
 			return value;
 		else
-			return -1;
+			throw new InvalidCastException($"El valor de la columna '{GetName(i)}' no es un int");
 	}
 
 	public long GetInt64(int i)
 	{
-		throw new NotImplementedException();
+	throw new NotImplementedException();
 	}
 
 	/// <summary>
@@ -161,15 +161,13 @@ internal class SalesDataReader : IDataReader
 		return -1;
 	}
 
-	public string GetString(int i) => GetValue(i)?.ToString();
+	public string GetString(int i) => GetValue(i)?.ToString() ?? string.Empty;
 
 	/// <summary>
 	///		Obtiene un valor por el índice
 	/// </summary>
 	public object GetValue(int i)
 	{
-		if (ActualRow == Sales.Count)
-			System.Diagnostics.Debug.WriteLine("Stop");
 		switch (i)
 		{
 			case 0:
@@ -189,7 +187,7 @@ internal class SalesDataReader : IDataReader
 
 	public int GetValues(object[] values)
 	{
-		throw new NotImplementedException();
+	throw new NotImplementedException();
 	}
 
 	/// <summary>

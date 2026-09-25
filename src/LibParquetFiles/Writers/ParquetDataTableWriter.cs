@@ -14,14 +14,24 @@ public class ParquetDataTableWriter : IAsyncDisposable
 
 	public ParquetDataTableWriter(int rowGroupSize)
 	{
+		ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rowGroupSize);
 		RowGroupSize = rowGroupSize;
 	}
 
 	/// <summary>
 	///		Abre el archivo
 	/// </summary>
+	/// <remarks>
+	///		El esquema del archivo lo fija el primer <see cref="DataTable"/> que se pase a <see cref="WriteAsync"/>;
+	///	las siguientes tablas se escriben posicionalmente contra ese mismo esquema, lo que permite exportar por
+	///	páginas sucesivas al mismo archivo
+	/// </remarks>
 	public void Open(string fileName)
 	{
+		if (Disposed)
+			throw new ObjectDisposedException(nameof(ParquetDataTableWriter));
+		if (_file != null || _stream != null)
+			throw new InvalidOperationException("The file is already open");
 		_stream = File.Open(fileName, FileMode.Create, FileAccess.Write);
 		_file = new Models.ParquetFileModel(RowGroupSize);
 	}
@@ -32,7 +42,7 @@ public class ParquetDataTableWriter : IAsyncDisposable
 	public async Task WriteAsync(DataTable table, CancellationToken cancellationToken)
 	{
 		if (_file is null || _stream is null)
-			throw new NotImplementedException("File is closed");
+			throw new InvalidOperationException("The file is closed: call Open first");
 		else
 		{
 			// Lee los datos
@@ -45,8 +55,11 @@ public class ParquetDataTableWriter : IAsyncDisposable
 					_writtenSchema = true;
 				}
 				// Carga los registros y los va añadiendo a la lista para meterlos en un grupo de filas
-				while (!cancellationToken.IsCancellationRequested && reader.Read())
+				while (reader.Read())
+				{
+					cancellationToken.ThrowIfCancellationRequested();
 					await _file.WriteRecordAsync(reader, cancellationToken);
+				}
 			}
 		}
 	}
@@ -57,7 +70,7 @@ public class ParquetDataTableWriter : IAsyncDisposable
 	public async Task FlushAsync(CancellationToken cancellationToken)
 	{
 		if (_file is null || _stream is null)
-			throw new NotImplementedException("File is closed");
+			throw new InvalidOperationException("The file is closed: call Open first");
 		else
 			await _file.FlushAsync(cancellationToken);
 	}
@@ -70,9 +83,9 @@ public class ParquetDataTableWriter : IAsyncDisposable
 		if (!Disposed)
 		{
 			// Elimina los datos
-			if (_file is not null)
+			if (_file != null)
 				await _file.DisposeAsync();
-			if (_stream is not null)
+			if (_stream != null)
 			{
 				await _stream.FlushAsync();
 				_stream.Close();

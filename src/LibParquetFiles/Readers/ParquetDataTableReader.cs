@@ -10,58 +10,45 @@ public class ParquetDataTableReader
 	/// <summary>
 	///		Carga una página de un archivo en un dataTable
 	/// </summary>
-	public async Task<(DataTable table, long totalRecordCount)> LoadAsync(string fileName, int page, int recordsPerPage, bool countRecords, 
-																		  ParquetFiltersCollection? filters, CancellationToken cancellationToken)
+	/// <remarks>
+	///		Si <paramref name="countRecords"/> es true, <c>totalRecordCount</c> es el número real de filas del
+	///	archivo (se lee hasta el final). Si es false, la lectura se detiene en cuanto la página solicitada está
+	///	completa y <c>totalRecordCount</c> es exactamente el número de filas recorridas hasta ese punto (salvo
+	///	que el archivo tenga menos filas que las necesarias para completar la página, caso en el que se lee hasta
+	///	el final de todas formas)
+	/// </remarks>
+	public async Task<(DataTable table, long totalRecordCount)> LoadAsync(string fileName, int page, int recordsPerPage, bool countRecords, CancellationToken cancellationToken)
 	{
+		ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
+		ArgumentOutOfRangeException.ThrowIfNegativeOrZero(recordsPerPage);
+
 		long record = 0;
 		int offset = (page - 1) * recordsPerPage;
 		DataTable table = new DataTable();
-		bool end = false;
 
 			// Lee los datos
 			using (ParquetDataReader reader = new ParquetDataReader())
 			{
-				// Abre el archivo
+				// Abre el archivo y añade el esquema a la tabla, incluso si no tiene ninguna fila
 				await reader.OpenAsync(fileName, cancellationToken);
+				AddSchema(table, reader);
 				// Lee los registros
-				while (await reader.ReadAsync(cancellationToken) && !end && !cancellationToken.IsCancellationRequested)
+				while (await reader.ReadAsync(cancellationToken))
 				{
-					// Añade el esquema a la tabla
-					if (table.Columns.Count == 0)
-						AddSchema(table, reader);
-					// Sólo se tiene en cuenta la fila si estamos en el filtro
-					if (IsAtFilter(reader, filters))
-					{
-						// Añade la fila a la tabla
-						if (record >= offset && record < offset + recordsPerPage)
-							AddRow(table, reader);
-						// Incrementa el registro (sólo si estamos en el filtro para contabilizar correctamente el número de registros)
-						record++;
-					}
-					// Comprueba si se deben contar todos los registros
-					end = !countRecords && record >= offset + recordsPerPage;
+					// Si se ha solicitado la cancelación, lanza en lugar de devolver una página parcial en silencio
+					cancellationToken.ThrowIfCancellationRequested();
+					// Añade la fila a la tabla si cae dentro de la página solicitada
+					if (record >= offset && record < offset + recordsPerPage)
+						AddRow(table, reader);
+					// Incrementa el registro
+					record++;
+					// Si no hace falta contar todos los registros y la página ya está completa, deja de leer
+					if (!countRecords && record >= offset + recordsPerPage)
+						break;
 				}
 			}
 			// Devuelve la tabla de datos
 			return (table, record);
-	}
-
-	/// <summary>
-	///		Comprueba si se debe añadir el registro actual a la salida teniendo en cuentra el filtro
-	/// </summary>
-	private bool IsAtFilter(ParquetDataReader reader, ParquetFiltersCollection? filters)
-	{
-		if (filters is null || filters.Count == 0)
-			return true;
-		else
-		{
-			// Evalúa las condiciones sobre los campos
-			for (int index = 0; index < reader.FieldCount; index++)
-				if (!filters.Evaluate(reader.GetName(index), reader[index]))
-					return false;
-			// Si ha llegado hasta aquí es porque cumple con todas las condiciones
-			return true;
-		}
 	}
 
 	/// <summary>
@@ -82,10 +69,7 @@ public class ParquetDataTableReader
 
 			// Añade las columnas
 			foreach (DataColumn column in row.Table.Columns)
-				if (reader[column.ColumnName] is null)
-					row[column] = DBNull.Value;
-				else
-					row[column] = reader[column.ColumnName];
+				row[column] = reader[column.ColumnName];
 			// Añade la fila a la tabla
 			table.Rows.Add(row);
 	}

@@ -106,5 +106,5 @@ public class ParquetFiltersCollection
 	/// <summary>
 	///		Filtros
 	/// </summary>
-	private Dictionary<string, ParquetFilter> Filters { get; } = new Dictionary<string, ParquetFilter>(StringComparer.InvariantCulture);
+	private Dictionary<string, ParquetFilter> Filters { get; } = new(StringComparer.InvariantCulture);
 }
